@@ -1,0 +1,120 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Default-deny catch-all
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Connectivity probe
+    match /test/{docId} {
+      allow get: if true;
+    }
+
+    // Hardened Global Helpers
+    function isValidId(id) {
+      return id is string && id.size() > 0 && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    function isValidProfile(data) {
+      return data.userId is string && data.userId == request.auth.uid &&
+             data.age is number && data.age >= 10 && data.age <= 120 &&
+             data.gender in ['male', 'female'] &&
+             data.heightCm is number && data.heightCm >= 50 && data.heightCm <= 300 &&
+             data.weightKg is number && data.weightKg >= 20 && data.weightKg <= 500 &&
+             data.activityLevel in ['sedentary', 'light', 'moderate', 'very_active', 'extra_active'] &&
+             data.fitnessGoal in ['lose_weight_steady', 'lose_weight_fast', 'maintain', 'gain_muscle', 'athletic', 'keto', 'mediterranean'] &&
+             data.dietPreference in ['balanced', 'high_protein', 'low_carb', 'keto', 'mediterranean', 'vegetarian', 'vegan'] &&
+             (!('language' in data) || (data.language is string && data.language.size() <= 16)) &&
+             (!('theme' in data) || (data.theme is string && data.theme.size() <= 32)) &&
+             (!('background' in data) || (data.background is string && data.background.size() <= 32)) &&
+             (!('fontStyle' in data) || (data.fontStyle is string && data.fontStyle.size() <= 32)) &&
+             (!('avatarEmoji' in data) || (data.avatarEmoji is string && data.avatarEmoji.size() <= 32));
+    }
+
+    function isValidFoodLog(data) {
+      return data.id is string && data.id.size() <= 128 &&
+             data.userId is string && data.userId == request.auth.uid &&
+             data.foodName is string && data.foodName.size() > 0 && data.foodName.size() <= 200 &&
+             data.mealSlot in ['breakfast', 'lunch', 'dinner', 'snack'] &&
+             data.calories is number && data.calories >= 0 && data.calories <= 10000 &&
+             data.protein is number && data.protein >= 0 &&
+             data.carbs is number && data.carbs >= 0 &&
+             data.fats is number && data.fats >= 0;
+    }
+
+    function isValidChatMessage(data) {
+      return data.id is string && data.id.size() <= 128 &&
+             data.userId is string && data.userId == request.auth.uid &&
+             data.role in ['user', 'model'] &&
+             data.text is string && data.text.size() > 0 && data.text.size() <= 10000 &&
+             data.timestamp is number;
+    }
+
+    function isValidCommunityRecipe(data) {
+      return data.id is string && data.id.size() <= 128 &&
+             data.authorId is string && data.authorId == request.auth.uid &&
+             data.title is string && data.title.size() > 0 && data.title.size() <= 200 &&
+             data.category in ['breakfast', 'lunch', 'dinner', 'supper', 'snack'] &&
+             data.calories is number && data.calories >= 0 &&
+             data.protein is number && data.protein >= 0 &&
+             data.carbs is number && data.carbs >= 0 &&
+             data.fats is number && data.fats >= 0;
+    }
+
+    // Global Community Recipe Catalog (Accessible by all users)
+    match /communityRecipes/{recipeId} {
+      allow get, list: if true;
+      allow create: if isSignedIn() && isValidId(recipeId) && isValidCommunityRecipe(incoming());
+      allow update: if isSignedIn() && isValidId(recipeId) && isValidCommunityRecipe(incoming()) && incoming().authorId == existing().authorId && resource.data.authorId == request.auth.uid;
+      allow delete: if isSignedIn() && resource.data.authorId == request.auth.uid;
+    }
+
+    // User Profile Document
+    match /users/{userId} {
+      allow get: if isOwner(userId);
+      allow create: if isOwner(userId) && isValidId(userId) && isValidProfile(incoming());
+      allow update: if isOwner(userId) && isValidId(userId) && isValidProfile(incoming()) && incoming().userId == existing().userId;
+      allow delete: if false;
+
+      // Private User Custom Recipes Subcollection
+      match /customRecipes/{recipeId} {
+        allow get, list: if isOwner(userId);
+        allow create, update: if isOwner(userId) && isValidId(recipeId);
+        allow delete: if isOwner(userId);
+      }
+
+      // Food Diary Subcollection
+      match /foodLogs/{logId} {
+        allow get, list: if isOwner(userId);
+        allow create: if isOwner(userId) && isValidId(logId) && isValidFoodLog(incoming());
+        allow update: if isOwner(userId) && isValidId(logId) && isValidFoodLog(incoming()) && incoming().userId == existing().userId;
+        allow delete: if isOwner(userId);
+      }
+
+      // Nutrition Consultation Chat History Subcollection
+      match /chatHistory/{messageId} {
+        allow get, list: if isOwner(userId);
+        allow create: if isOwner(userId) && isValidId(messageId) && isValidChatMessage(incoming());
+        allow update: if false;
+        allow delete: if isOwner(userId);
+      }
+    }
+  }
+}

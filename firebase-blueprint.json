@@ -1,0 +1,108 @@
+{
+  "entities": {
+    "UserProfile": {
+      "title": "UserProfile",
+      "description": "User anthropometric profile, goals, and daily nutritional targets.",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string", "maxLength": 128 },
+        "email": { "type": "string", "maxLength": 256 },
+        "displayName": { "type": "string", "maxLength": 128 },
+        "photoURL": { "type": "string", "maxLength": 1024 },
+        "age": { "type": "number" },
+        "gender": { "type": "string", "enum": ["male", "female"] },
+        "heightCm": { "type": "number" },
+        "weightKg": { "type": "number" },
+        "targetWeightKg": { "type": "number" },
+        "unitSystem": { "type": "string", "enum": ["metric", "imperial"] },
+        "activityLevel": { "type": "string", "enum": ["sedentary", "light", "moderate", "very_active", "extra_active"] },
+        "fitnessGoal": { "type": "string", "enum": ["lose_weight_steady", "lose_weight_fast", "maintain", "gain_muscle", "athletic", "keto", "mediterranean"] },
+        "dietPreference": { "type": "string", "enum": ["balanced", "high_protein", "low_carb", "keto", "mediterranean", "vegetarian", "vegan"] },
+        "waterGoalMl": { "type": "number" },
+        "language": { "type": "string", "maxLength": 16 },
+        "theme": { "type": "string", "maxLength": 32 },
+        "background": { "type": "string", "maxLength": 32 },
+        "fontStyle": { "type": "string", "maxLength": 32 },
+        "avatarEmoji": { "type": "string", "maxLength": 32 },
+        "updatedAt": { "type": "string" }
+      },
+      "required": ["userId", "age", "gender", "heightCm", "weightKg", "activityLevel", "fitnessGoal", "dietPreference"]
+    },
+    "FoodLog": {
+      "title": "FoodLog",
+      "description": "Daily food intake logged by the user.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 128 },
+        "userId": { "type": "string", "maxLength": 128 },
+        "foodName": { "type": "string", "maxLength": 200 },
+        "mealSlot": { "type": "string", "enum": ["breakfast", "lunch", "dinner", "snack"] },
+        "servings": { "type": "number" },
+        "servingDescription": { "type": "string", "maxLength": 200 },
+        "calories": { "type": "number" },
+        "protein": { "type": "number" },
+        "carbs": { "type": "number" },
+        "fats": { "type": "number" },
+        "fiber": { "type": "number" },
+        "timeLogged": { "type": "string", "maxLength": 64 },
+        "date": { "type": "string", "maxLength": 32 }
+      },
+      "required": ["id", "userId", "foodName", "mealSlot", "calories", "protein", "carbs", "fats"]
+    },
+    "ChatMessage": {
+      "title": "ChatMessage",
+      "description": "A message in the nutrition consultation chat thread.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 128 },
+        "userId": { "type": "string", "maxLength": 128 },
+        "role": { "type": "string", "enum": ["user", "model"] },
+        "text": { "type": "string", "maxLength": 10000 },
+        "timestamp": { "type": "number" }
+      },
+      "required": ["id", "userId", "role", "text", "timestamp"]
+    },
+    "CommunityRecipe": {
+      "title": "CommunityRecipe",
+      "description": "Global community recipes contributed by users.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 128 },
+        "authorId": { "type": "string", "maxLength": 128 },
+        "authorName": { "type": "string", "maxLength": 128 },
+        "title": { "type": "string", "maxLength": 200 },
+        "category": { "type": "string", "enum": ["breakfast", "lunch", "dinner", "supper", "snack"] },
+        "cuisine": { "type": "string", "maxLength": 64 },
+        "calories": { "type": "number" },
+        "protein": { "type": "number" },
+        "carbs": { "type": "number" },
+        "fats": { "type": "number" },
+        "fiber": { "type": "number" },
+        "prepTimeMinutes": { "type": "number" },
+        "difficulty": { "type": "string", "enum": ["Easy", "Moderate", "Quick"] },
+        "chefTip": { "type": "string", "maxLength": 1000 },
+        "image": { "type": "string", "maxLength": 1024 },
+        "createdAt": { "type": "number" }
+      },
+      "required": ["id", "authorId", "authorName", "title", "category", "calories", "protein", "carbs", "fats"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": { "$ref": "UserProfile" },
+      "description": "Stores individual user profile and anthropometric stats."
+    },
+    "/users/{userId}/foodLogs/{logId}": {
+      "schema": { "$ref": "FoodLog" },
+      "description": "Subcollection of daily food diary entries."
+    },
+    "/users/{userId}/chatHistory/{messageId}": {
+      "schema": { "$ref": "ChatMessage" },
+      "description": "Subcollection of nutrition consultation chat messages."
+    },
+    "/communityRecipes/{recipeId}": {
+      "schema": { "$ref": "CommunityRecipe" },
+      "description": "Global community recipe database published by users."
+    }
+  }
+}

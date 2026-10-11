@@ -1,0 +1,6 @@
+{
+  "name": "NutriTrack - BMI, Diet Planner & Wearable Calorie Tracker",
+  "description": "Comprehensive personalized nutrition planner and daily calorie tracker driven by BMI, fitness goals, and wearable activity integration.",
+  "requestFramePermissions": ["bluetooth", "camera"],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
